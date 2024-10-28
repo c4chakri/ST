@@ -120,4 +120,18 @@ describe("IdentityStorage Contract", function () {
       ).to.be.revertedWithCustomError(identityStorage, "EnforcedPause()");
     });
   });
+
+  it("should handle large batch registration correctly", async function () {
+    const MAX_BATCH_SIZE = 100;
+    const addresses = [];
+    for (let i = 0; i < MAX_BATCH_SIZE; i++) {
+        addresses.push(ethers.Wallet.createRandom().address);
+    }
+    const tx = await identityStorage.registerUsers(addresses);
+
+    const receipt = await tx.wait();
+    console.log("Gas Used:", receipt.gasUsed.toString());
+    expect(await identityStorage.totalUsers()).to.equal(MAX_BATCH_SIZE);
+  });
+
 });

@@ -16,6 +16,7 @@ contract IdentityStorage is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     }
     mapping(address => USER) public users;
     mapping(uint => address) public idToAddress;
+    uint256 public constant MAX_BATCH_SIZE = 100;
     uint public totalUsers;
 
 
@@ -39,6 +40,8 @@ contract IdentityStorage is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
       * @param _userAddresses Array of user addresses to be registered
       */
     function registerUsers(address[] calldata _userAddresses) external onlyOwner whenNotPaused {
+        require(_userAddresses.length <= MAX_BATCH_SIZE, "Batch size too large");
+
         for (uint i = 0; i < _userAddresses.length; i++) {
             address userAddress = _userAddresses[i];
             require(!isUserExists(userAddress), "Already registered");
@@ -113,17 +116,6 @@ contract IdentityStorage is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     function unpause() external onlyOwner virtual whenPaused {
         _unpause();
         emit Unpaused(msg.sender);
-    }
-
-
-    /**  
-      * @dev Emergency method to withdraw any ETH sent to the contract
-      * @param toAddress Address to send the ETH to
-      */
-    function emergencyWithdrawAsset(address payable toAddress) external onlyOwner {
-        if(!toAddress.send(address(this).balance)) {
-            return toAddress.transfer(address(this).balance);
-        }
     }
 
 }
