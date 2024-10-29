@@ -226,6 +226,13 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
     }
 
     function burn(address _userAddress, uint256 _amount) external onlyOwnerOrAgent {
+        require(balanceOf(_userAddress) >= _amount, "cannot burn more than balance");
+        uint256 freeBalance = balanceOf(_userAddress) - _frozenTokens[_userAddress];
+        if (_amount > freeBalance) {
+            uint256 tokensToUnfreeze = _amount - (freeBalance);
+            _frozenTokens[_userAddress] = _frozenTokens[_userAddress] - (tokensToUnfreeze);
+            emit TokensUnfrozen(_userAddress, tokensToUnfreeze);
+        }
         _burn(_userAddress, _amount);
     }
 
