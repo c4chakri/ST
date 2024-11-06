@@ -26,7 +26,7 @@ contract TokenStorage {
     // IIdentityRegistry internal _tokenIdentityRegistry;
 
     /// @dev Compliance contract linked to the onchain validator system
-    // IModularCompliance internal _tokenCompliance;
+    IModularCompliance internal _tokenCompliance;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

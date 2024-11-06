@@ -35,14 +35,17 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
         // Constructor
         function init(
             address _identityStorage,
-            // address _compliance,
+            address _compliance,
             string memory _name,
             string memory _symbol,
             uint8 _decimals,
             uint256 _initialSupply
         ) external initializer {
             require(owner() == address(0), "already initialized");
-            require(_identityStorage != address(0), "invalid argument - zero address");
+            require(
+            _identityStorage != address(0)
+            && _compliance != address(0)
+        , "invalid argument - zero address");  
             require(
                 keccak256(abi.encode(_name)) != keccak256(abi.encode("")) &&
                 keccak256(abi.encode(_symbol)) != keccak256(abi.encode("")),
@@ -58,6 +61,8 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
 
             maxTotalSupply = _initialSupply;
             setIdentityStorage(_identityStorage);
+            setCompliance(_compliance);
+
         }
 
     // Setters
@@ -76,9 +81,12 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
         identityStorage = IIdentityStorage(_identityStorage);
     }
 
-    function setCompliance(address _compliance) public onlyOwner {
-        require(_compliance != address(0), "invalid argument - zero address");
-        _complianceAddress = _compliance;
+    function setCompliance(address _compliance) public override onlyOwner {
+        if (address(_tokenCompliance) != address(0)) {
+            _tokenCompliance.unbindToken(address(this));
+        }
+        _tokenCompliance = IModularCompliance(_compliance);
+        _tokenCompliance.bindToken(address(this));
         emit ComplianceAdded(_compliance);
     }
 
@@ -112,8 +120,9 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
         require(!_frozen[_to] && !_frozen[msg.sender], "wallet is frozen");
         require(_amount <= balanceOf(msg.sender) - _frozenTokens[msg.sender], "Insufficient Balance");
         
-        if (identityStorage.isValidInvestor(_to)) {
+        if (identityStorage.isValidInvestor(_to) && _tokenCompliance.canTransfer(msg.sender, _to, _amount)) {
             _transfer(msg.sender, _to, _amount);
+            _tokenCompliance.transferred(msg.sender, _to, _amount);
             return true;
         }
         revert("Transfer not possible");
@@ -126,10 +135,10 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
     ) external whenNotPaused returns (bool) {
         require(!_frozen[_to] && !_frozen[_from], "wallet is frozen");
         require(_amount <= balanceOf(_from) - (_frozenTokens[_from]), "Insufficient Balance");
-        if(identityStorage.isValidInvestor(_to)) {
+        if(identityStorage.isValidInvestor(_to) && _tokenCompliance.canTransfer(msg.sender, _to, _amount)) {
             _approve(_from, msg.sender, _allowances[_from][msg.sender] - (_amount));
             _transfer(_from, _to, _amount);
-            // _tokenCompliance.transferred(_from, _to, _amount);
+            _tokenCompliance.transferred(_from, _to, _amount);
             return true;
         }
         revert("Transfer not possible");
@@ -159,7 +168,7 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
         }
         if (identityStorage.isValidInvestor(_to)) {
             _transfer(_from, _to, _amount);
-            // _tokenCompliance.transferred(_from, _to, _amount);
+            _tokenCompliance.transferred(_from, _to, _amount);
             return true;
         }
         revert("Transfer not possible");
@@ -222,7 +231,11 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
     // Mint and Burn functions
     function mint(address _to, uint256 _amount) public onlyOwnerOrAgent {
         require(identityStorage.isValidInvestor(_to), "Identity is not verified.");
+        require(_tokenCompliance.canTransfer(address(0), _to, _amount), "Compliance not followed");
+
         _mint(_to, _amount);
+        _tokenCompliance.created(_to, _amount);
+
     }
 
     function burn(address _userAddress, uint256 _amount) external onlyOwnerOrAgent {
@@ -234,6 +247,8 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
             emit TokensUnfrozen(_userAddress, tokensToUnfreeze);
         }
         _burn(_userAddress, _amount);
+        _tokenCompliance.destroyed(_userAddress, _amount);
+
     }
 
     // Batch operations
@@ -305,6 +320,10 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
 
     function getFrozenTokens(address _userAddress) external view override returns (uint256) {
         return _frozenTokens[_userAddress];
+    }
+
+    function compliance() external view returns (IModularCompliance) {
+        return _tokenCompliance;
     }
 
     function remainingMintableTokens() external view returns (uint256) {
