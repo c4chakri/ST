@@ -32,8 +32,8 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
         _;
     }
 
-        // Constructor
-        function init(
+    // Constructor
+    function init(
             address _identityStorage,
             address _compliance,
             string memory _name,
@@ -109,9 +109,8 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
         emit Unpaused(msg.sender);
     }
 
-    function approve(address spender, uint256 value) external override returns (bool) {
-        _allowances[msg.sender][spender] = value;
-        emit Approval(msg.sender, spender, value);
+    function approve(address _spender, uint256 _amount) external virtual override returns (bool) {
+        _approve(msg.sender, _spender, _amount);
         return true;
     }
 

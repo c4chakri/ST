@@ -3,8 +3,8 @@
 
 pragma solidity ^0.8.21;
 
-
-// import "../compliance/modular/IModularCompliance.sol";
+import "./IIdentityStorage.sol";
+import "./IModularCompliance.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ISecurityToken is IERC20 {
@@ -99,11 +99,9 @@ interface ISecurityToken is IERC20 {
 
     function symbol() external view returns (string memory);
 
+    function identityStorage() external view returns (IIdentityStorage);
 
-
-    // function compliance() external view returns (IModularCompliance);
-
-   
+    function compliance() external view returns (IModularCompliance);
 
     function isFrozen(address _userAddress) external view returns (bool);
 
