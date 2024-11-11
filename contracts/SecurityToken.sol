@@ -11,7 +11,6 @@ import "./AgentRoleUpgradeable.sol";
 contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
 
     IIdentityStorage public identityStorage;
-    address private _complianceAddress;
 
     uint256 public maxTotalSupply;
 
@@ -62,7 +61,6 @@ contract SecurityToken is TokenStorage, AgentRoleUpgradeable, ISecurityToken {
             maxTotalSupply = _initialSupply;
             setIdentityStorage(_identityStorage);
             setCompliance(_compliance);
-
         }
 
     // Setters
