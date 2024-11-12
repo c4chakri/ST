@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("SecurityToken Contract", function () {
-    let securityToken, identityStorage, owner, agent, user1, user2, user3;
+    let securityToken, identityStorage, owner, agent, user1, user2, user3, modularCompliance;
 
     beforeEach(async function () {
         [owner, agent, user1, user2, user3] = await ethers.getSigners();
@@ -11,6 +11,10 @@ describe("SecurityToken Contract", function () {
         identityStorage = await IdentityStorageMock.deploy();
         await identityStorage.initialize();
 
+        const ModularCompliance = await ethers.getContractFactory("ModularCompliance");
+        modularCompliance = await ModularCompliance.deploy();
+        await modularCompliance.init();
+
         const SecurityToken = await ethers.getContractFactory("SecurityToken");
         securityToken = await SecurityToken.deploy();
 
@@ -18,6 +22,7 @@ describe("SecurityToken Contract", function () {
 
         await securityToken.connect(owner).init(
             identityStorage,
+            modularCompliance,
             "MyToken",
             "MTK",
             18,
@@ -38,6 +43,7 @@ describe("SecurityToken Contract", function () {
         it("Should fail to initialize twice", async function () {
             await expect(securityToken.init(
                 identityStorage,
+                modularCompliance,
                 "MyToken",
                 "MTK",
                 18,
