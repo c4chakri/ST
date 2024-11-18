@@ -101,7 +101,8 @@ describe("SecurityToken Contract", function () {
             const newIdentityInstance = await newIdentityStorage.deploy();
             newIdentityInstance.target;
 
-            await expect(securityToken.connect(user1).setIdentityStorage(newIdentityInstance)).to.be.revertedWithCustomError(securityToken, "OwnableUnauthorizedAccount").withArgs(user1.address);
+            await expect(securityToken.connect(user1).
+            setIdentityStorage(newIdentityInstance)).to.be.revertedWithCustomError(securityToken, "OwnableUnauthorizedAccount").withArgs(user1.address);
         });
     });
 
